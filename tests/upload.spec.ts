@@ -1,0 +1,15 @@
+import { test, expect } from '@playwright/test';
+
+const png1x1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j3ioAAAAASUVORK5CYII=';
+
+test('upload flow creates an expense', async ({ page }) => {
+  await page.goto('/upload');
+  await page.getByTestId('file-input').setInputFiles({
+    name: 'receipt-a.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(png1x1, 'base64'),
+  });
+
+  await expect(page.getByText('receipt-a.png')).toBeVisible();
+  await expect(page.getByText(/Open extracted expense/)).toBeVisible({ timeout: 5000 });
+});

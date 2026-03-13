@@ -1,16 +1,30 @@
-### Hi there 👋
+# Receipt Accounting UI (Front-end only)
 
-<!--
-**adavilacorujo/adavilacorujo** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+Next.js + TypeScript UI for receipt/expense capture and review with mocked in-memory processing and localStorage persistence.
 
-Here are some ideas to get you started:
+## Setup
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+```bash
+npm install
+npm run dev
+```
+
+Open http://localhost:3000
+
+## Scripts
+
+```bash
+npm run dev
+npm run build
+npm run start
+npm run test:e2e
+```
+
+## Features
+
+- `/upload`: drag-drop / picker, simulated upload + OCR processing statuses
+- `/expenses`: TanStack table dashboard with filters, bulk mark reviewed, CSV export
+- `/expenses/:id`: editable extracted expense form with zod validations and confidence indicators
+- `/reports/monthly`: monthly summary cards + category chart (Recharts) + stub PDF export
+- Zustand + localStorage persistence with first-load seeded sample expenses
+- 2 Playwright tests for upload and edit flows
