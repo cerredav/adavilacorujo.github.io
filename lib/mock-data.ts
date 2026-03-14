@@ -49,6 +49,7 @@ export function generateExpenseFromFile(
       : inferenceText
         ? `OCR: ${inferenceText.slice(0, 120)}`
         : '',
+    taxes: [{ name: 'Sales Tax', amount: tax, rate: 0.08 }],
     lineItems: [
       {
         id: uuidv4(),

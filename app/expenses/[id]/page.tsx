@@ -39,7 +39,6 @@ export default function ExpenseDetailPage() {
   const [zoom, setZoom] = useState(100);
   const [previewDataUrl, setPreviewDataUrl] = useState<string | undefined>(expense?.documentDataUrl);
 
-
   useEffect(() => {
     let mounted = true;
     async function loadPreview() {
@@ -76,6 +75,15 @@ export default function ExpenseDetailPage() {
   });
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'lineItems' });
+  const watchedLineItems = form.watch('lineItems');
+
+  const lineItemsRunningTotal = useMemo(
+    () => (watchedLineItems ?? []).reduce((acc, item) => acc + (Number.isFinite(item.total) ? item.total : 0), 0),
+    [watchedLineItems],
+  );
+  const taxesBreakdown = expense?.taxes ?? [];
+  const taxesTotal = useMemo(() => taxesBreakdown.reduce((acc, t) => acc + t.amount, 0), [taxesBreakdown]);
+  const presentedReceiptTotal = useMemo(() => Number((lineItemsRunningTotal + taxesTotal).toFixed(2)), [lineItemsRunningTotal, taxesTotal]);
 
   const warning = useMemo(() => {
     const values = form.getValues();
@@ -85,7 +93,13 @@ export default function ExpenseDetailPage() {
   if (!expense) return <Card>Expense not found.</Card>;
 
   const save = (data: FormData, status: 'Completed' | 'Needs Review') => {
-    updateExpense(id, { ...data, status });
+    updateExpense(id, {
+      ...data,
+      subtotal: Number(lineItemsRunningTotal.toFixed(2)),
+      tax: Number(taxesTotal.toFixed(2)),
+      total: presentedReceiptTotal,
+      status,
+    });
     toast.success('Expense saved');
     router.push('/expenses');
   };
@@ -147,6 +161,35 @@ export default function ExpenseDetailPage() {
               </div>
             ))}
             <Button type="button" variant="outline" onClick={() => append({ description: '', qty: 1, unitPrice: 0, total: 0 })}>Add line item</Button>
+
+            <Card>
+              <h4>Presented receipt totals</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Line items running total</span>
+                <strong>${lineItemsRunningTotal.toFixed(2)}</strong>
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <strong>Taxes breakdown</strong>
+                {taxesBreakdown.length === 0 ? (
+                  <p style={{ margin: '4px 0' }}>No taxes extracted.</p>
+                ) : (
+                  taxesBreakdown.map((tax) => (
+                    <div key={tax.name} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>{tax.name}{typeof tax.rate === 'number' ? ` (${(tax.rate * 100).toFixed(2)}%)` : ''}</span>
+                      <span>${tax.amount.toFixed(2)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                <span>Total tax</span>
+                <strong>${taxesTotal.toFixed(2)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, borderTop: '1px solid #e2e8f0', paddingTop: 8 }}>
+                <span>Receipt total (line items + taxes)</span>
+                <strong>${presentedReceiptTotal.toFixed(2)}</strong>
+              </div>
+            </Card>
 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Button type="submit">Save & Mark Reviewed</Button>

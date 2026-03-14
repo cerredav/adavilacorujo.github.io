@@ -4,6 +4,13 @@ export type ConfidenceLevel = 'high' | 'medium' | 'low';
 
 export type ExpenseStatus = 'Needs Review' | 'Completed' | 'Processing';
 
+
+export type TaxLine = {
+  name: string;
+  amount: number;
+  rate?: number;
+};
+
 export type LineItem = {
   id: string;
   description: string;
@@ -27,6 +34,7 @@ export type Expense = {
   category: string;
   paymentMethod?: string;
   notes?: string;
+  taxes: TaxLine[];
   lineItems: LineItem[];
   fieldConfidence: Record<string, ConfidenceLevel>;
   confidenceScore: number;

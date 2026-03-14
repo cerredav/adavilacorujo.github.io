@@ -77,3 +77,4 @@ pytest -q
 
 - OCR is attempted via `pytesseract` for images; unsupported formats or OCR runtime limitations use a deterministic fallback string.
 - The Python API is inference-only and does not persist uploaded files.
+- Receipt total in UI is presented as line-items running total + summed taxes.

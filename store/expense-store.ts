@@ -102,16 +102,12 @@ export const useExpenseStore = create<Store>()(
             }
 
             if (Array.isArray(inference.structured?.taxes) && inference.structured.taxes.length > 0) {
-              const summedTaxes = inference.structured.taxes.reduce((acc, t) => acc + (typeof t.amount === 'number' ? t.amount : 0), 0);
-              expense.tax = Number(summedTaxes.toFixed(2));
-            } else if (typeof inferredTotal === 'number' && expense.total >= expense.subtotal) {
-              expense.tax = Number((expense.total - expense.subtotal).toFixed(2));
-            }
-
-            if (Array.isArray(inference.structured?.taxes) && inference.structured.taxes.length > 0) {
-              const taxNote = inference.structured.taxes
-                .map((t) => `${t.name}: ${typeof t.amount === 'number' ? t.amount.toFixed(2) : 'n/a'}`)
-                .join(', ');
+              expense.taxes = inference.structured.taxes.map((t) => ({
+                name: t.name,
+                amount: typeof t.amount === 'number' ? Number(t.amount.toFixed(2)) : 0,
+                rate: typeof t.rate === 'number' ? t.rate : undefined,
+              }));
+              const taxNote = expense.taxes.map((t) => `${t.name}: ${t.amount.toFixed(2)}`).join(', ');
               expense.notes = `${expense.notes ? `${expense.notes} | ` : ''}Taxes: ${taxNote}`;
             }
 
@@ -128,6 +124,17 @@ export const useExpenseStore = create<Store>()(
                   total,
                 };
               });
+            }
+
+            const lineItemsTotal = expense.lineItems.reduce((acc, li) => acc + li.total, 0);
+            const taxesTotal = expense.taxes.reduce((acc, t) => acc + t.amount, 0);
+
+            expense.subtotal = Number(lineItemsTotal.toFixed(2));
+            expense.tax = Number(taxesTotal.toFixed(2));
+            expense.total = Number((lineItemsTotal + taxesTotal).toFixed(2));
+
+            if (typeof inferredTotal === 'number' && Math.abs(inferredTotal - expense.total) > 0.02) {
+              expense.notes = `${expense.notes ? `${expense.notes} | ` : ''}Receipt total from OCR/LLM: ${inferredTotal.toFixed(2)}`;
             }
 
             set((s) => ({ expenses: [expense, ...s.expenses] }));
