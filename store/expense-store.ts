@@ -90,11 +90,29 @@ export const useExpenseStore = create<Store>()(
               expense.vendor = inference.structured.vendor_name;
             }
 
-            if (typeof inference.structured?.total_amount === 'number') {
-              expense.total = Number(inference.structured.total_amount.toFixed(2));
-              if (expense.total >= expense.subtotal) {
-                expense.tax = Number((expense.total - expense.subtotal).toFixed(2));
-              }
+            const inferredTotal =
+              typeof inference.structured?.receipt_total === 'number'
+                ? inference.structured.receipt_total
+                : typeof inference.structured?.total_amount === 'number'
+                  ? inference.structured.total_amount
+                  : null;
+
+            if (typeof inferredTotal === 'number') {
+              expense.total = Number(inferredTotal.toFixed(2));
+            }
+
+            if (Array.isArray(inference.structured?.taxes) && inference.structured.taxes.length > 0) {
+              const summedTaxes = inference.structured.taxes.reduce((acc, t) => acc + (typeof t.amount === 'number' ? t.amount : 0), 0);
+              expense.tax = Number(summedTaxes.toFixed(2));
+            } else if (typeof inferredTotal === 'number' && expense.total >= expense.subtotal) {
+              expense.tax = Number((expense.total - expense.subtotal).toFixed(2));
+            }
+
+            if (Array.isArray(inference.structured?.taxes) && inference.structured.taxes.length > 0) {
+              const taxNote = inference.structured.taxes
+                .map((t) => `${t.name}: ${typeof t.amount === 'number' ? t.amount.toFixed(2) : 'n/a'}`)
+                .join(', ');
+              expense.notes = `${expense.notes ? `${expense.notes} | ` : ''}Taxes: ${taxNote}`;
             }
 
             if (Array.isArray(inference.structured?.line_items) && inference.structured.line_items.length > 0) {

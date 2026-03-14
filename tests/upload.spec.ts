@@ -12,7 +12,7 @@ test('upload flow creates an expense', async ({ page }) => {
         content_type: 'image/png',
         text: 'Sample OCR text',
         confidence: 0.93,
-        structured: { vendor_name: 'Sample OCR Vendor', total_amount: 9.99, line_items: [{ description: 'Item A', qty: 1, unit_price: 9.99, total: 9.99 }] },
+        structured: { vendor_name: 'Sample OCR Vendor', receipt_total: 10.79, total_amount: 10.79, taxes: [{ name: 'Sales Tax', amount: 0.8, rate: 0.08 }], line_items: [{ description: 'Item A', qty: 1, unit_price: 9.99, total: 9.99 }] },
       }),
     });
   });

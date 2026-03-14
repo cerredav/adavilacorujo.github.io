@@ -5,7 +5,13 @@ export type InferenceResult = {
   confidence: number;
   structured?: {
     vendor_name?: string | null;
+    receipt_total?: number | null;
     total_amount?: number | null;
+    taxes?: Array<{
+      name: string;
+      amount?: number | null;
+      rate?: number | null;
+    }>;
     line_items?: Array<{
       description: string;
       qty?: number | null;

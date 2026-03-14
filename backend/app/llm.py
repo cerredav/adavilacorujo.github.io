@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx
 
-from .models import ExtractedLineItem, StructuredExtraction
+from .models import ExtractedLineItem, ExtractedTax, StructuredExtraction
 
 OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://localhost:11434/api/generate')
 OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama3.2-vision')
@@ -33,14 +33,12 @@ def _extract_json(raw: str) -> dict[str, Any]:
     if not text:
         return {}
 
-    # Try direct JSON first.
     try:
         parsed = json.loads(text)
         return parsed if isinstance(parsed, dict) else {}
     except json.JSONDecodeError:
         pass
 
-    # Try fenced block JSON.
     fenced = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, flags=re.DOTALL)
     if fenced:
         try:
@@ -49,7 +47,6 @@ def _extract_json(raw: str) -> dict[str, Any]:
         except json.JSONDecodeError:
             pass
 
-    # Try first object-looking region.
     start = text.find('{')
     end = text.rfind('}')
     if start != -1 and end != -1 and end > start:
@@ -64,10 +61,15 @@ def _extract_json(raw: str) -> dict[str, Any]:
 
 def extract_structured_fields(ocr_text: str, file_bytes: bytes, content_type: str) -> StructuredExtraction:
     prompt = (
-        'You are an accounting extraction assistant. '\
-        'Given OCR text and optionally an image of a receipt, extract fields as strict JSON only. '\
-        'Return object with keys: vendor_name (string|null), total_amount (number|null), '\
-        'line_items (array of {description, qty, unit_price, total}). '\
+        'You are an accounting extraction assistant. '
+        'Given OCR text and optionally an image of a receipt, extract fields as strict JSON only. '
+        'Return object with keys: '
+        'vendor_name (string|null), '
+        'receipt_total (number|null), '
+        'total_amount (number|null), '
+        'taxes (array of {name, amount, rate}), '
+        'line_items (array of {description, qty, unit_price, total}). '
+        'Enumerate every tax visible on the receipt in the taxes array. '
         'If unknown, return null or empty array. No extra keys.\n\n'
         f'OCR text:\n{ocr_text}\n'
     )
@@ -90,6 +92,21 @@ def extract_structured_fields(ocr_text: str, file_bytes: bytes, content_type: st
     raw = str(body.get('response', '')).strip()
     parsed = _extract_json(raw)
 
+    taxes: list[ExtractedTax] = []
+    for tax in parsed.get('taxes', []) if isinstance(parsed.get('taxes'), list) else []:
+        if not isinstance(tax, dict):
+            continue
+        name = str(tax.get('name', '')).strip()
+        if not name:
+            continue
+        taxes.append(
+            ExtractedTax(
+                name=name,
+                amount=_to_float(tax.get('amount')),
+                rate=_to_float(tax.get('rate')),
+            )
+        )
+
     items: list[ExtractedLineItem] = []
     for item in parsed.get('line_items', []) if isinstance(parsed.get('line_items'), list) else []:
         if not isinstance(item, dict):
@@ -106,8 +123,12 @@ def extract_structured_fields(ocr_text: str, file_bytes: bytes, content_type: st
             )
         )
 
+    receipt_total = _to_float(parsed.get('receipt_total')) or _to_float(parsed.get('total_amount'))
+
     return StructuredExtraction(
         vendor_name=(str(parsed.get('vendor_name')).strip() if parsed.get('vendor_name') is not None else None) or None,
-        total_amount=_to_float(parsed.get('total_amount')),
+        receipt_total=receipt_total,
+        total_amount=_to_float(parsed.get('total_amount')) or receipt_total,
+        taxes=taxes,
         line_items=items,
     )

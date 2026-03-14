@@ -22,7 +22,7 @@ Uploaded files are stored in two browser-side locations:
 - **IndexedDB** (`receipt-documents-db/documents`) for file preview payloads.
 - **localStorage** (`uploaded-documents` + Zustand state) for upload tracking metadata.
 
-No object store is required for frontend uploads. During upload processing, the UI sends each file to a Next.js proxy route (`/api/infer`) which forwards to the Python inference server to avoid browser CORS issues.
+No object store is required for frontend uploads. During upload processing, the UI sends each file to a Next.js proxy route (`/api/infer`) which forwards to the Python inference server to avoid browser CORS issues. The app intentionally enforces no storage quota limits at application level for IndexedDB/localStorage usage.
 
 ## OCR + LLM extraction flow
 
@@ -32,7 +32,8 @@ For each upload, the app:
 2. Proxy forwards to Python inference service.
 3. Python service runs OCR and then calls an Ollama model over HTTP to extract:
    - `vendor_name`
-   - `total_amount`
+   - `receipt_total` (total sum of receipt)
+   - `taxes` (every enumerated tax line)
    - `line_items`
 
 ## Python API setup
@@ -62,7 +63,7 @@ API docs: `http://localhost:8000/docs`
 
 ## API endpoints
 
-- `POST /infer` — upload PDF/PNG/JPG and receive OCR text + confidence + structured extraction (`vendor_name`, `total_amount`, `line_items`).
+- `POST /infer` — upload PDF/PNG/JPG and receive OCR text + confidence + structured extraction (`vendor_name`, `receipt_total`, `taxes`, `line_items`).
 - `GET /health` — health check.
 
 ## Backend tests
