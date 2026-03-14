@@ -11,7 +11,15 @@ function hash(text: string) {
   return Math.abs(h);
 }
 
-export function generateExpenseFromFile(name: string, type: string, size: number, dataUrl?: string, documentStorageId?: string): Expense {
+export function generateExpenseFromFile(
+  name: string,
+  type: string,
+  size: number,
+  dataUrl?: string,
+  documentStorageId?: string,
+  inferenceText?: string,
+  inferenceConfidence?: number,
+): Expense {
   const seed = hash(name);
   const vendor = vendors[seed % vendors.length];
   const category = categories[seed % categories.length];
@@ -19,7 +27,7 @@ export function generateExpenseFromFile(name: string, type: string, size: number
   const tax = Number((subtotal * 0.08).toFixed(2));
   const mismatch = seed % 4 === 0;
   const total = mismatch ? Number((subtotal + tax + 0.07).toFixed(2)) : Number((subtotal + tax).toFixed(2));
-  const low = seed % 5 === 0;
+  const low = seed % 5 === 0 || (inferenceConfidence ?? 1) < 0.7;
   const status: ExpenseStatus = low || mismatch ? 'Needs Review' : 'Completed';
 
   return {
@@ -36,7 +44,11 @@ export function generateExpenseFromFile(name: string, type: string, size: number
     total,
     category,
     paymentMethod: ['Card', 'Cash', 'ACH'][seed % 3],
-    notes: low ? 'Low OCR confidence, verify details.' : '',
+    notes: low
+      ? `Low OCR confidence, verify details.${inferenceText ? ` OCR: ${inferenceText.slice(0, 120)}` : ''}`
+      : inferenceText
+        ? `OCR: ${inferenceText.slice(0, 120)}`
+        : '',
     lineItems: [
       {
         id: uuidv4(),
@@ -52,7 +64,7 @@ export function generateExpenseFromFile(name: string, type: string, size: number
       total: mismatch ? 'low' : 'high',
       category: low ? 'medium' : 'high',
     },
-    confidenceScore: low ? 54 : mismatch ? 68 : 92,
+    confidenceScore: inferenceConfidence ? Math.round(inferenceConfidence * 100) : low ? 54 : mismatch ? 68 : 92,
     status,
     createdAt: new Date().toISOString(),
     documentDataUrl: dataUrl,

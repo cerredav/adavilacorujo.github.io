@@ -73,6 +73,7 @@ export default function UploadPage() {
             <div style={{ height: 10, width: `${u.progress}%`, background: '#0f172a', borderRadius: 999 }} />
           </div>
           {u.status === 'Processing' && <div className="skeleton" style={{ height: 14, width: '40%', marginTop: 8 }} />}
+          {u.error && <p style={{ color: '#dc2626', marginTop: 8 }}>{u.error}</p>}
           {u.expenseId && (
             <Link href={`/expenses/${u.expenseId}`} style={{ marginTop: 8, display: 'inline-block' }}>
               Open extracted expense

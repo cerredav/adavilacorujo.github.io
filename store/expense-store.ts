@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Expense, UploadItem } from '@/lib/types';
 import { generateExpenseFromFile, seededExpenses } from '@/lib/mock-data';
 import { saveDocument, trackUploadedDocument } from '@/lib/indexed-doc-store';
+import { runInference } from '@/lib/inference-client';
 
 type Store = {
   expenses: Expense[];
@@ -73,13 +74,32 @@ export const useExpenseStore = create<Store>()(
           });
           trackUploadedDocument(item.documentStorageId!);
 
-          const expense = generateExpenseFromFile(file.name, file.type, file.size, dataUrl, item.documentStorageId);
-          set((s) => ({ expenses: [expense, ...s.expenses] }));
-          set((s) => ({
-            uploads: s.uploads.map((u) =>
-              u.id === item.id ? { ...u, status: expense.status === 'Completed' ? 'Completed' : 'Needs Review', expenseId: expense.id } : u,
-            ),
-          }));
+          try {
+            const inference = await runInference(file);
+            const expense = generateExpenseFromFile(
+              file.name,
+              file.type,
+              file.size,
+              dataUrl,
+              item.documentStorageId,
+              inference.text,
+              inference.confidence,
+            );
+            set((s) => ({ expenses: [expense, ...s.expenses] }));
+            set((s) => ({
+              uploads: s.uploads.map((u) =>
+                u.id === item.id ? { ...u, status: expense.status === 'Completed' ? 'Completed' : 'Needs Review', expenseId: expense.id } : u,
+              ),
+            }));
+          } catch (error) {
+            set((s) => ({
+              uploads: s.uploads.map((u) =>
+                u.id === item.id
+                  ? { ...u, status: 'Failed', error: error instanceof Error ? error.message : 'Inference request failed' }
+                  : u,
+              ),
+            }));
+          }
         }
       },
       updateExpense: (id, patch) => set((s) => ({ expenses: s.expenses.map((e) => (e.id === id ? { ...e, ...patch } : e)) })),

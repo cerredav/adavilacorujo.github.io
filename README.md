@@ -3,7 +3,7 @@
 This repository includes:
 
 - **Frontend**: Next.js App Router UI for upload/review/dashboard/reporting flows.
-- **Python API**: FastAPI inference-only OCR service.
+- **Python API**: FastAPI inference-only OCR service used by the upload UI.
 
 ## Frontend setup
 
@@ -14,6 +14,12 @@ npm run dev
 
 Frontend runs on `http://localhost:3000`.
 
+Optional env for frontend API target:
+
+```bash
+NEXT_PUBLIC_INFERENCE_URL=http://localhost:8000/infer
+```
+
 ## Frontend document storage
 
 Uploaded files are stored in two browser-side locations:
@@ -21,7 +27,7 @@ Uploaded files are stored in two browser-side locations:
 - **IndexedDB** (`receipt-documents-db/documents`) for file preview payloads.
 - **localStorage** (`uploaded-documents` + Zustand state) for upload tracking metadata.
 
-No object store is required for frontend uploads.
+No object store is required for frontend uploads. During upload processing, the UI also sends each file to the inference API.
 
 ## Python API setup
 
