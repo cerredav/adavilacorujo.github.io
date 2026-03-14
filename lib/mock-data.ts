@@ -45,9 +45,9 @@ export function generateExpenseFromFile(
     category,
     paymentMethod: ['Card', 'Cash', 'ACH'][seed % 3],
     notes: low
-      ? `Low OCR confidence, verify details.${inferenceText ? ` OCR: ${inferenceText.slice(0, 120)}` : ''}`
+      ? `Low OCR confidence, verify details.${inferenceText ? ` OCR: ${inferenceText}` : ''}`
       : inferenceText
-        ? `OCR: ${inferenceText.slice(0, 120)}`
+        ? `OCR: ${inferenceText}`
         : '',
     taxes: [{ name: 'Sales Tax', amount: tax, rate: 0.08 }],
     lineItems: [
