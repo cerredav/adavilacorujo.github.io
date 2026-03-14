@@ -85,6 +85,33 @@ export const useExpenseStore = create<Store>()(
               inference.text,
               inference.confidence,
             );
+
+            if (inference.structured?.vendor_name) {
+              expense.vendor = inference.structured.vendor_name;
+            }
+
+            if (typeof inference.structured?.total_amount === 'number') {
+              expense.total = Number(inference.structured.total_amount.toFixed(2));
+              if (expense.total >= expense.subtotal) {
+                expense.tax = Number((expense.total - expense.subtotal).toFixed(2));
+              }
+            }
+
+            if (Array.isArray(inference.structured?.line_items) && inference.structured.line_items.length > 0) {
+              expense.lineItems = inference.structured.line_items.map((line, idx) => {
+                const qty = typeof line.qty === 'number' ? line.qty : 1;
+                const unitPrice = typeof line.unit_price === 'number' ? line.unit_price : 0;
+                const total = typeof line.total === 'number' ? line.total : Number((qty * unitPrice).toFixed(2));
+                return {
+                  id: `${expense.id}-li-${idx}`,
+                  description: line.description,
+                  qty,
+                  unitPrice,
+                  total,
+                };
+              });
+            }
+
             set((s) => ({ expenses: [expense, ...s.expenses] }));
             set((s) => ({
               uploads: s.uploads.map((u) =>

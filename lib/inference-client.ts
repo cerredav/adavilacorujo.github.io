@@ -3,6 +3,16 @@ export type InferenceResult = {
   content_type: string;
   text: string;
   confidence: number;
+  structured?: {
+    vendor_name?: string | null;
+    total_amount?: number | null;
+    line_items?: Array<{
+      description: string;
+      qty?: number | null;
+      unit_price?: number | null;
+      total?: number | null;
+    }>;
+  };
 };
 
 const PROXY_ENDPOINT = '/api/infer';

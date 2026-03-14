@@ -4,7 +4,8 @@ import hashlib
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
-from .models import InferenceResponse
+from .llm import extract_structured_fields
+from .models import InferenceResponse, StructuredExtraction
 from .ocr import extract_text
 
 app = FastAPI(title='Receipt OCR Inference API')
@@ -26,13 +27,20 @@ async def infer_document(file: UploadFile = File(...)) -> InferenceResponse:
     if not payload:
         raise HTTPException(status_code=400, detail='Uploaded file is empty')
 
-    text = extract_text(payload, file.content_type or 'application/octet-stream')
+    content_type = file.content_type or 'application/octet-stream'
+    text = extract_text(payload, content_type)
     digest = hashlib.sha256(payload).hexdigest()
     confidence = 0.55 + (int(digest[:2], 16) / 255) * 0.4
 
+    try:
+        structured = extract_structured_fields(text, payload, content_type)
+    except Exception:
+        structured = StructuredExtraction()
+
     return InferenceResponse(
         filename=file.filename or 'uploaded-document',
-        content_type=file.content_type or 'application/octet-stream',
+        content_type=content_type,
         text=text,
         confidence=round(min(confidence, 0.99), 2),
+        structured=structured,
     )
