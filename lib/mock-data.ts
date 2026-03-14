@@ -11,7 +11,7 @@ function hash(text: string) {
   return Math.abs(h);
 }
 
-export function generateExpenseFromFile(name: string, type: string, size: number, dataUrl?: string): Expense {
+export function generateExpenseFromFile(name: string, type: string, size: number, dataUrl?: string, documentStorageId?: string): Expense {
   const seed = hash(name);
   const vendor = vendors[seed % vendors.length];
   const category = categories[seed % categories.length];
@@ -28,6 +28,7 @@ export function generateExpenseFromFile(name: string, type: string, size: number
     sourceType: type,
     sourceSize: size,
     vendor,
+    documentStorageId,
     date: formatISO(subDays(new Date(), seed % 60), { representation: 'date' }),
     currency: (['USD', 'EUR', 'GBP'] as const)[seed % 3],
     subtotal,

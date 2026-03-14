@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,6 +13,7 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useExpenseStore } from '@/store/expense-store';
+import { getDocument } from '@/lib/indexed-doc-store';
 
 const schema = z.object({
   vendor: z.string().min(1),
@@ -36,6 +37,25 @@ export default function ExpenseDetailPage() {
   const updateExpense = useExpenseStore((s) => s.updateExpense);
   const deleteExpense = useExpenseStore((s) => s.deleteExpense);
   const [zoom, setZoom] = useState(100);
+  const [previewDataUrl, setPreviewDataUrl] = useState<string | undefined>(expense?.documentDataUrl);
+
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadPreview() {
+      if (expense?.documentDataUrl) {
+        setPreviewDataUrl(expense.documentDataUrl);
+        return;
+      }
+      if (!expense?.documentStorageId) return;
+      const doc = await getDocument(expense.documentStorageId);
+      if (mounted && doc?.dataUrl) setPreviewDataUrl(doc.dataUrl);
+    }
+    void loadPreview();
+    return () => {
+      mounted = false;
+    };
+  }, [expense]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -79,17 +99,17 @@ export default function ExpenseDetailPage() {
       <div className="review-layout">
         <Card>
           <h3>Document Preview</h3>
-          {expense.sourceType.includes('image') && expense.documentDataUrl ? (
+          {expense.sourceType.includes('image') && previewDataUrl ? (
             <>
               <div style={{ display: 'flex', gap: 8 }}>
                 <Button variant="outline" onClick={() => setZoom((z) => z - 10)}>-</Button>
                 <Button variant="outline" onClick={() => setZoom((z) => z + 10)}>+</Button>
               </div>
-              <img src={expense.documentDataUrl} alt={expense.sourceName} style={{ width: `${zoom}%`, marginTop: 8 }} />
+              <img src={previewDataUrl} alt={expense.sourceName} style={{ width: `${zoom}%`, marginTop: 8 }} />
             </>
-          ) : expense.sourceType.includes('pdf') && expense.documentDataUrl ? (
-            <object data={expense.documentDataUrl} type="application/pdf" width="100%" height="500">
-              <p>PDF preview unavailable. <a href={expense.documentDataUrl} download={expense.sourceName}>Download</a></p>
+          ) : expense.sourceType.includes('pdf') && previewDataUrl ? (
+            <object data={previewDataUrl} type="application/pdf" width="100%" height="500">
+              <p>PDF preview unavailable. <a href={previewDataUrl} download={expense.sourceName}>Download</a></p>
             </object>
           ) : (
             <p>PDF preview unavailable.</p>

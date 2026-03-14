@@ -2,3 +2,7 @@ node_modules
 .next
 playwright-report
 test-results
+
+__pycache__
+*.pyc
+backend/.venv

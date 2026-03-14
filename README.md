@@ -1,30 +1,53 @@
-# Receipt Accounting UI (Front-end only)
+# Receipt Accounting Platform (Frontend + Python OCR inference API)
 
-Next.js + TypeScript UI for receipt/expense capture and review with mocked in-memory processing and localStorage persistence.
+This repository includes:
 
-## Setup
+- **Frontend**: Next.js App Router UI for upload/review/dashboard/reporting flows.
+- **Python API**: FastAPI inference-only OCR service.
+
+## Frontend setup
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000
+Frontend runs on `http://localhost:3000`.
 
-## Scripts
+## Frontend document storage
+
+Uploaded files are stored in two browser-side locations:
+
+- **IndexedDB** (`receipt-documents-db/documents`) for file preview payloads.
+- **localStorage** (`uploaded-documents` + Zustand state) for upload tracking metadata.
+
+No object store is required for frontend uploads.
+
+## Python API setup
 
 ```bash
-npm run dev
-npm run build
-npm run start
-npm run test:e2e
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
-## Features
+API docs: `http://localhost:8000/docs`
 
-- `/upload`: drag-drop / picker, simulated upload + OCR processing statuses
-- `/expenses`: TanStack table dashboard with filters, bulk mark reviewed, CSV export
-- `/expenses/:id`: editable extracted expense form with zod validations and confidence indicators
-- `/reports/monthly`: monthly summary cards + category chart (Recharts) + stub PDF export
-- Zustand + localStorage persistence with first-load seeded sample expenses
-- 2 Playwright tests for upload and edit flows
+## API endpoints
+
+- `POST /infer` — upload PDF/PNG/JPG and receive OCR text + confidence.
+- `GET /health` — health check.
+
+## Backend tests
+
+```bash
+cd backend
+pytest -q
+```
+
+## Notes
+
+- OCR is attempted via `pytesseract` for images; unsupported formats or OCR runtime limitations use a deterministic fallback string.
+- The Python API is inference-only and does not persist uploaded files.

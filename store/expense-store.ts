@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { Expense, UploadItem } from '@/lib/types';
 import { generateExpenseFromFile, seededExpenses } from '@/lib/mock-data';
+import { saveDocument, trackUploadedDocument } from '@/lib/indexed-doc-store';
 
 type Store = {
   expenses: Expense[];
@@ -41,11 +42,12 @@ export const useExpenseStore = create<Store>()(
           size: f.size,
           progress: 0,
           status: 'Queued' as const,
+          documentStorageId: uuidv4(),
         }));
         set((s) => ({ uploads: [...items, ...s.uploads] }));
 
         for (const file of files) {
-          const item = get().uploads.find((u) => u.fileName === file.name && u.size === file.size);
+          const item = get().uploads.find((u) => u.fileName === file.name && u.size === file.size && !u.expenseId);
           if (!item) continue;
           set((s) => ({ uploads: s.uploads.map((u) => (u.id === item.id ? { ...u, status: 'Uploading' } : u)) }));
           for (const p of [25, 45, 70, 100]) {
@@ -54,12 +56,24 @@ export const useExpenseStore = create<Store>()(
           }
           set((s) => ({ uploads: s.uploads.map((u) => (u.id === item.id ? { ...u, status: 'Processing' } : u)) }));
           await wait(400);
+
           const dataUrl = await new Promise<string>((resolve) => {
             const reader = new FileReader();
             reader.onload = () => resolve(String(reader.result));
             reader.readAsDataURL(file);
           });
-          const expense = generateExpenseFromFile(file.name, file.type, file.size, dataUrl);
+
+          await saveDocument({
+            id: item.documentStorageId!,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            dataUrl,
+            uploadedAt: new Date().toISOString(),
+          });
+          trackUploadedDocument(item.documentStorageId!);
+
+          const expense = generateExpenseFromFile(file.name, file.type, file.size, dataUrl, item.documentStorageId);
           set((s) => ({ expenses: [expense, ...s.expenses] }));
           set((s) => ({
             uploads: s.uploads.map((u) =>

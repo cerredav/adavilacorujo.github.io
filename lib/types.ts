@@ -17,6 +17,7 @@ export type Expense = {
   sourceName: string;
   sourceType: string;
   sourceSize: number;
+  documentStorageId?: string;
   vendor: string;
   date: string;
   currency: 'USD' | 'EUR' | 'GBP';
@@ -43,4 +44,5 @@ export type UploadItem = {
   status: UploadStatus;
   error?: string;
   expenseId?: string;
+  documentStorageId?: string;
 };
