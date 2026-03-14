@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const png1x1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j3ioAAAAASUVORK5CYII=';
 
 test('upload flow creates an expense', async ({ page }) => {
-  await page.route('**/infer', async (route) => {
+  await page.route('**/api/infer', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

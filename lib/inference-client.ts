@@ -5,14 +5,13 @@ export type InferenceResult = {
   confidence: number;
 };
 
-const DEFAULT_URL = 'http://localhost:8000/infer';
+const PROXY_ENDPOINT = '/api/infer';
 
 export async function runInference(file: File): Promise<InferenceResult> {
-  const endpoint = process.env.NEXT_PUBLIC_INFERENCE_URL || DEFAULT_URL;
   const form = new FormData();
   form.append('file', file);
 
-  const response = await fetch(endpoint, {
+  const response = await fetch(PROXY_ENDPOINT, {
     method: 'POST',
     body: form,
   });

@@ -14,11 +14,6 @@ npm run dev
 
 Frontend runs on `http://localhost:3000`.
 
-Optional env for frontend API target:
-
-```bash
-NEXT_PUBLIC_INFERENCE_URL=http://localhost:8000/infer
-```
 
 ## Frontend document storage
 
@@ -27,7 +22,7 @@ Uploaded files are stored in two browser-side locations:
 - **IndexedDB** (`receipt-documents-db/documents`) for file preview payloads.
 - **localStorage** (`uploaded-documents` + Zustand state) for upload tracking metadata.
 
-No object store is required for frontend uploads. During upload processing, the UI also sends each file to the inference API.
+No object store is required for frontend uploads. During upload processing, the UI sends each file to a Next.js proxy route (`/api/infer`) which forwards to the Python inference server to avoid browser CORS issues.
 
 ## Python API setup
 
@@ -37,6 +32,12 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
+```
+
+Optional server-side env for proxy target (defaults to `http://localhost:8000/infer`):
+
+```bash
+INFERENCE_SERVER_URL=http://localhost:8000/infer
 ```
 
 API docs: `http://localhost:8000/docs`
